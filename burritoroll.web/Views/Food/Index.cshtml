@@ -1,0 +1,17 @@
+﻿@{
+    ViewBag.Title = "Index";
+}
+
+<h2>Index</h2>
+
+<b><em>Can you dig our burritos?</em></b>
+ @foreach (var burrito in ViewBag.burritos)
+        {
+           <p>name: @burrito.name price: @burrito.price</p>
+        }
+
+<b><em>Can you dig our tacos?</em></b>
+ @foreach (var taco in ViewBag.tacos)
+        {
+           <p>name: @taco.name price: @taco.price</p>
+        }
