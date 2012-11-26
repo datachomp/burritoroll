@@ -3,6 +3,8 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2012
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "burritoroll.web", "burritoroll.web\burritoroll.web.csproj", "{DBA7F6A3-F542-48D5-862E-0FEB2CF3B94C}"
 EndProject
+Project("{00D1A9C2-B5F0-4AF3-8072-F6C62B433612}") = "burritoroll.db", "burritoroll.db\burritoroll.db.sqlproj", "{09F242B2-90FD-4688-B780-38ACD13A39BA}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -13,6 +15,12 @@ Global
 		{DBA7F6A3-F542-48D5-862E-0FEB2CF3B94C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DBA7F6A3-F542-48D5-862E-0FEB2CF3B94C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{DBA7F6A3-F542-48D5-862E-0FEB2CF3B94C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{09F242B2-90FD-4688-B780-38ACD13A39BA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{09F242B2-90FD-4688-B780-38ACD13A39BA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{09F242B2-90FD-4688-B780-38ACD13A39BA}.Debug|Any CPU.Deploy.0 = Debug|Any CPU
+		{09F242B2-90FD-4688-B780-38ACD13A39BA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{09F242B2-90FD-4688-B780-38ACD13A39BA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{09F242B2-90FD-4688-B780-38ACD13A39BA}.Release|Any CPU.Deploy.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
