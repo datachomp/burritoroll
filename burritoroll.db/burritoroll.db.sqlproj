@@ -81,6 +81,9 @@
   <ItemGroup>
     <None Include="Deploy-Once\0001_20121126-1121_rsullivan.sql" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="Deploy-Once\0002_20121128-0948_rsullivan.sql" />
+  </ItemGroup>
   <Target Name="AfterDatabaseSync" Inputs="@(DBSyncFiles)" Outputs="OUTPUT_PLACEHOLDER">
     <PropertyGroup>
       <ObjectsAffected>@(DBSyncFiles->'%(ObjectOwner).%(ObjectName) (Object Category: %(ObjectCategory))')</ObjectsAffected>
