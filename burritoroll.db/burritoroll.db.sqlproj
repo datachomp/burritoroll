@@ -29,7 +29,9 @@
     <PreDeploymentSubFolder>Pre-Deployment</PreDeploymentSubFolder>
     <PostDeploymentSubFolder>Post-Deployment</PostDeploymentSubFolder>
     <TargetDatabaseSet>True</TargetDatabaseSet>
-    <ExcludeObjectsFromSync />
+    <ExcludeObjectsFromSync>
+StoredProcedure=[dbo].[yaytime];
+</ExcludeObjectsFromSync>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <OutputPath>bin\Release\</OutputPath>
@@ -53,6 +55,7 @@
     <DefineTrace>true</DefineTrace>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <RunSqlCodeAnalysis>True</RunSqlCodeAnalysis>
   </PropertyGroup>
   <!--Import the settings-->
   <PropertyGroup>
@@ -90,6 +93,9 @@
   <ItemGroup>
     <None Include="Deploy-Once\0004_20121128-0954_rsullivan.sql" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="Deploy-Once\0005_20121128-1251_rsullivan.sql" />
+  </ItemGroup>
   <Target Name="AfterDatabaseSync" Inputs="@(DBSyncFiles)" Outputs="OUTPUT_PLACEHOLDER">
     <PropertyGroup>
       <ObjectsAffected>@(DBSyncFiles->'%(ObjectOwner).%(ObjectName) (Object Category: %(ObjectCategory))')</ObjectsAffected>
@@ -99,4 +105,17 @@
     <Message Condition="'$(ObjectsAffected)' != ''" Importance="High" Text="The following objects were imported into the project: $(ObjectsAffected)" />
     <!--<Exec Condition="'$(ObjectsAffected)' != ''" Command="ImportObjectsFromProject.exe /projectDirectory=c:\src\db\AdventureWorks\ /objects=$(ObjectsAffected)" IgnoreExitCode="False" />-->
   </Target>
+  <PropertyGroup>
+    <ExcludeObjectsFromImport>
+			Schema=\[cya\];
+			Table=\[(.*?)\];
+			StoredProcedure=\[cya\]\.\[(.*?)\];
+			Schema=\[job\];
+			Table=\[job\]\.\[(.*?)\];
+			StoredProcedure=\[job\]\.\[(.*?)\];
+			Schema=\[reporting\];
+			Table=\[reporting\]\.\[(.*?)\];
+			StoredProcedure=\[reporting\]\.\[(.*?)\];
+		</ExcludeObjectsFromImport>
+  </PropertyGroup>
 </Project>
