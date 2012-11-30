@@ -32,6 +32,8 @@ USING (
 	SELECT  'Guapo' AS NAME , 4 AS price
 	UNION
 	SELECT  'Hombre' AS NAME , 10 AS price
+	UNION
+    SELECT  'Bebe' AS NAME , 6 AS price
 --SELECT * FROM dbo.tacos
 ) AS Source
 ON (Target.name = Source.name AND Target.price = Source.price)
