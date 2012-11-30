@@ -15,3 +15,42 @@
         {
            <p>name: @taco.name price: @taco.price</p>
         }
+
+<b><emd>Taco</emd></b>
+<table>
+ <thead>
+  <tr><th>Taco</th><th>Price</th></tr>
+ </thead>
+ <tbody data-bind="foreach: tacos">
+  <tr>
+   <td data-bind="text: title"></td>
+   <td data-bind="text: price"></td>
+  </tr>
+ </tbody>
+</table>
+@section scripts{
+	<script type="text/javascript">
+	function viewModel() {
+		var self = this;
+
+		//self.tacoarray = ko.observable(@Html.Raw(Json.Encode(@ViewBag.tacos)));
+
+		//for(var i = 0; i < array.length; i++) {
+		//	jScriptArray[i] = array[i];
+		//}
+
+		//self.tacos = ko.observableArray(array);
+		self.tacos = ko.observableArray([
+		  { title: 'grande', price: '4' },
+		 { title: 'poco', price: '5' },
+		 { title: 'hefe', price: '6' }
+		]);
+
+		self.tacos.sort(function (left, right) {
+			return left['title'] == right.title ? 0 : left.title < right.title ? -1 : 1;
+		});
+	}
+
+	ko.applyBindings(new viewModel());
+	</script>
+}
