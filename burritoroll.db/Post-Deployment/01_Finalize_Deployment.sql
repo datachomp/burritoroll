@@ -13,7 +13,7 @@ Post-Deployment Script Template
 MERGE dbo.[tacos] AS Target
 USING (
 	SELECT  'Amigo' AS NAME ,2 AS price
-	UNION
+	UNION ALL
 	SELECT  'Cheech' AS NAME ,2 AS price
 --SELECT * FROM dbo.tacos
 ) AS Source
@@ -30,9 +30,9 @@ OUTPUT source.name, SOURCE.price;
 MERGE dbo.[burritos] AS Target
 USING (
 	SELECT  'Guapo' AS NAME , 4 AS price
-	UNION
+	UNION ALL
 	SELECT  'Hombre' AS NAME , 10 AS price
-	UNION
+	UNION ALL
     SELECT  'Bebe' AS NAME , 6 AS price
 --SELECT * FROM dbo.tacos
 ) AS Source
