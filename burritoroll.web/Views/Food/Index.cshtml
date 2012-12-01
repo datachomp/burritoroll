@@ -1,29 +1,41 @@
-﻿@{
+﻿@model burritoroll.web.Models.viewmodel_Food
+@{
     ViewBag.Title = "Index";
 }
 
 <h2>Index</h2>
 
 <b><em>Can you dig our burritos?</em></b>
- @foreach (var burrito in ViewBag.burritos)
+@* @foreach (var burrito in Model.burritos)
         {
            <p>name: @burrito.name price: @burrito.price</p>
         }
-
+*@
+<table>
+ <thead>
+  <tr><th>Burrito</th><th>Price</th></tr>
+ </thead>
+ <tbody data-bind="foreach: burritosarray">
+  <tr>
+   <td data-bind="text: name"></td>
+   <td data-bind="text: price"></td>
+  </tr>
+ </tbody>
+</table>
 <b><em>Can you dig our tacos?</em></b>
- @foreach (var taco in ViewBag.tacos)
+ @* foreach (var taco in Model.tacos)
         {
            <p>name: @taco.name price: @taco.price</p>
         }
-
-<b><emd>Taco</emd></b>
+ *@
+@*<b><emd>Taco</emd></b>*@
 <table>
  <thead>
   <tr><th>Taco</th><th>Price</th></tr>
  </thead>
- <tbody data-bind="foreach: tacos">
+ <tbody data-bind="foreach: tacosarray">
   <tr>
-   <td data-bind="text: title"></td>
+   <td data-bind="text: name"></td>
    <td data-bind="text: price"></td>
   </tr>
  </tbody>
@@ -33,22 +45,15 @@
 	function viewModel() {
 		var self = this;
 
-		//self.tacoarray = ko.observable(@Html.Raw(Json.Encode(@ViewBag.tacos)));
+	    self.tacosarray = ko.observableArray(@Html.Raw(Json.Encode(Model.tacos.ToArray())));
+	    self.burritosarray = ko.observableArray(@Html.Raw(Json.Encode(Model.burritos.ToArray())));
+	    
+	    var sortitFunction = function (a, b) {
+	        return a.name.toLowerCase() == b.name.toLowerCase() ? 0 : a.name.toLowerCase() < b.name.toLowerCase() ? -1 : 1;
+	    };
 
-		//for(var i = 0; i < array.length; i++) {
-		//	jScriptArray[i] = array[i];
-		//}
-
-		//self.tacos = ko.observableArray(array);
-		self.tacos = ko.observableArray([
-		  { title: 'grande', price: '4' },
-		 { title: 'poco', price: '5' },
-		 { title: 'hefe', price: '6' }
-		]);
-
-		self.tacos.sort(function (left, right) {
-			return left['title'] == right.title ? 0 : left.title < right.title ? -1 : 1;
-		});
+	    self.tacosarray.sort(sortitFunction);
+	    self.burritosarray.sort(sortitFunction);
 	}
 
 	ko.applyBindings(new viewModel());
