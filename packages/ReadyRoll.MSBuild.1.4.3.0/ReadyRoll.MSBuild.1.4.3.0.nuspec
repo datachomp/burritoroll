@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2011/08/nuspec.xsd">
+  <metadata>
+    <id>ReadyRoll.MSBuild</id>
+    <version>1.4.3.0</version>
+    <title>ReadyRoll.MSBuild</title>
+    <authors>ReadyRoll</authors>
+    <owners>ReadyRoll</owners>
+    <licenseUrl>http://download.ready-roll.com/EULA.txt</licenseUrl>
+    <projectUrl>http://ready-roll.com/</projectUrl>
+    <requireLicenseAcceptance>true</requireLicenseAcceptance>
+    <description>Provides build-time support for ReadyRoll SQL Projects, including support for Octopus Deploy NuPkg file creation.</description>
+    <releaseNotes>Initial version</releaseNotes>
+    <copyright>Copyright 2013</copyright>
+    <tags>build sync deploy sql server</tags>
+    <references />
+  </metadata>
+</package>

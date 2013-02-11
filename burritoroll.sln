@@ -5,6 +5,11 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "burritoroll.web", "burritor
 EndProject
 Project("{00D1A9C2-B5F0-4AF3-8072-F6C62B433612}") = "burritoroll.db", "burritoroll.db\burritoroll.db.sqlproj", "{09F242B2-90FD-4688-B780-38ACD13A39BA}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{082ED44F-9CC1-453C-8366-2B27F3852B75}"
+	ProjectSection(SolutionItems) = preProject
+		.nuget\packages.config = .nuget\packages.config
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
