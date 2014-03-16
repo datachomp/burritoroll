@@ -1,6 +1,8 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2012
+# Visual Studio 2013
+VisualStudioVersion = 12.0.30110.0
+MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "burritoroll.web", "burritoroll.web\burritoroll.web.csproj", "{DBA7F6A3-F542-48D5-862E-0FEB2CF3B94C}"
 EndProject
 Project("{00D1A9C2-B5F0-4AF3-8072-F6C62B433612}") = "burritoroll.db", "burritoroll.db\burritoroll.db.sqlproj", "{09F242B2-90FD-4688-B780-38ACD13A39BA}"

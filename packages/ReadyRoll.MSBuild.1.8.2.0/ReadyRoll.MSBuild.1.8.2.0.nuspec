@@ -1,0 +1,58 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2011/08/nuspec.xsd">
+    <metadata>
+        <id>ReadyRoll.MSBuild</id>
+        <version>1.8.2.0</version>
+        <title>ReadyRoll.MSBuild</title>
+        <authors>ReadyRoll</authors>
+        <owners>ReadyRoll</owners>
+        <licenseUrl>http://download.ready-roll.com/EULA.txt</licenseUrl>
+        <projectUrl>http://ready-roll.com</projectUrl>
+        <requireLicenseAcceptance>true</requireLicenseAcceptance>
+        <description>Provides build-time support for ReadyRoll SQL Projects, including support for Octopus Deploy NuPkg file creation.</description>
+        <releaseNotes>http://ready-roll.com/Download.aspx</releaseNotes>
+        <copyright>Copyright 2013</copyright>
+        <tags>build sync deploy sql server</tags>
+    </metadata>
+    <files>
+        <file src="tools\octopack\content\OctoPack-Readme.txt" target="tools\octopack\content\OctoPack-Readme.txt" />
+        <file src="tools\octopack\targets\NuGet.exe" target="tools\octopack\targets\NuGet.exe" />
+        <file src="tools\octopack\targets\OctoPack.targets" target="tools\octopack\targets\OctoPack.targets" />
+        <file src="tools\octopack\targets\OctoPack.Tasks.dll" target="tools\octopack\targets\OctoPack.Tasks.dll" />
+        <file src="tools\octopack\targets\OctoPack.Tasks.pdb" target="tools\octopack\targets\OctoPack.Tasks.pdb" />
+        <file src="tools\octopack\tools\Install.ps1" target="tools\octopack\tools\Install.ps1" />
+        <file src="tools\octopack\tools\MSBuild.psm1" target="tools\octopack\tools\MSBuild.psm1" />
+        <file src="tools\octopack\tools\NuGet.exe" target="tools\octopack\tools\NuGet.exe" />
+        <file src="tools\octopack\tools\Uninstall.ps1" target="tools\octopack\tools\Uninstall.ps1" />
+        <file src="tools\ApexSql.Backup.dll" target="tools\ApexSql.Backup.dll" />
+        <file src="tools\ApexSql.BackupCore.dll" target="tools\ApexSql.BackupCore.dll" />
+        <file src="tools\ApexSql.Common.Activation.dll" target="tools\ApexSql.Common.Activation.dll" />
+        <file src="tools\ApexSql.Common.BackupMetadata.dll" target="tools\ApexSql.Common.BackupMetadata.dll" />
+        <file src="tools\ApexSql.Common.CommonLib.dll" target="tools\ApexSql.Common.CommonLib.dll" />
+        <file src="tools\ApexSql.Common.Decry.dll" target="tools\ApexSql.Common.Decry.dll" />
+        <file src="tools\ApexSql.Common.Dependency.dll" target="tools\ApexSql.Common.Dependency.dll" />
+        <file src="tools\ApexSql.Common.ExceptionReporter.dll" target="tools\ApexSql.Common.ExceptionReporter.dll" />
+        <file src="tools\ApexSql.Common.GrammarParser.dll" target="tools\ApexSql.Common.GrammarParser.dll" />
+        <file src="tools\ApexSql.Common.OfflineMetadata.dll" target="tools\ApexSql.Common.OfflineMetadata.dll" />
+        <file src="tools\ApexSql.Common.Scripting.dll" target="tools\ApexSql.Common.Scripting.dll" />
+        <file src="tools\ApexSql.Common.ScriptMetadata.dll" target="tools\ApexSql.Common.ScriptMetadata.dll" />
+        <file src="tools\ApexSql.Common.SourceControl.dll" target="tools\ApexSql.Common.SourceControl.dll" />
+        <file src="tools\ApexSql.Common.ZipLib.dll" target="tools\ApexSql.Common.ZipLib.dll" />
+        <file src="tools\ApexSql.DataDiff.dll" target="tools\ApexSql.DataDiff.dll" />
+        <file src="tools\ApexSql.Diff.Api.dll" target="tools\ApexSql.Diff.Api.dll" />
+        <file src="tools\ApexSql.Diff.dll" target="tools\ApexSql.Diff.dll" />
+        <file src="tools\ApexSql.Engine.dll" target="tools\ApexSql.Engine.dll" />
+        <file src="tools\ApexSql.SourceControl.Interfaces.dll" target="tools\ApexSql.SourceControl.Interfaces.dll" />
+        <file src="tools\DynLib.dll" target="tools\DynLib.dll" />
+        <file src="tools\HtmlAgilityPack.dll" target="tools\HtmlAgilityPack.dll" />
+        <file src="tools\Infralution.Licensing.WPF.dll" target="tools\Infralution.Licensing.WPF.dll" />
+        <file src="tools\log4net.dll" target="tools\log4net.dll" />
+        <file src="tools\logging.config" target="tools\logging.config" />
+        <file src="tools\Microsoft.Data.Tools.Schema.SqlTasks.targets" target="tools\Microsoft.Data.Tools.Schema.SqlTasks.targets" />
+        <file src="tools\Microsoft.SqlServer.Dac.dll" target="tools\Microsoft.SqlServer.Dac.dll" />
+        <file src="tools\Microsoft.SqlServer.TransactSql.ScriptDom.dll" target="tools\Microsoft.SqlServer.TransactSql.ScriptDom.dll" />
+        <file src="tools\ReadyRoll.Data.Schema.SSDT.targets" target="tools\ReadyRoll.Data.Schema.SSDT.targets" />
+        <file src="tools\ReadyRoll.Data.Schema.TSqlTasks.targets" target="tools\ReadyRoll.Data.Schema.TSqlTasks.targets" />
+        <file src="tools\ReadyRoll.dll" target="tools\ReadyRoll.dll" />
+    </files>
+</package>

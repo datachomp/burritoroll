@@ -4,6 +4,8 @@
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>
     <SSDTExists Condition="Exists('$(MSBuildExtensionsPath)\Microsoft\VisualStudio\v$(VisualStudioVersion)\SSDT\Microsoft.Data.Tools.Schema.SqlTasks.targets')">True</SSDTExists>
     <VisualStudioVersion Condition="'$(SSDTExists)' == ''">10.0</VisualStudioVersion>
+    <TargetDatabase>burritoroll</TargetDatabase>
+    <DefaultConnectionString>Data Source=localhost;Initial Catalog=burritoroll;Integrated Security=True;Pooling=False</DefaultConnectionString>
   </PropertyGroup>
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
@@ -70,7 +72,7 @@ StoredProcedure=[dbo].[yaytime];
     <AppDataPath>$(APPDATA)</AppDataPath>
   </PropertyGroup>
   <PropertyGroup>
-    <ReadyRollTargetsPath>..\packages\ReadyRoll.MsBuild.1.4.3.0\tools\ReadyRoll.Data.Schema.SSDT.targets</ReadyRollTargetsPath>
+    <ReadyRollTargetsPath>..\packages\ReadyRoll.MsBuild.1.8.2.0\tools\ReadyRoll.Data.Schema.SSDT.targets</ReadyRollTargetsPath>
   </PropertyGroup>
   <Import Condition="Exists('$(ReadyRollTargetsPath)')" Project="$(ReadyRollTargetsPath)" />
   <Import Condition="!Exists('$(ReadyRollTargetsPath)')" Project="$(MSBuildExtensionsPath)\ReadyRoll\ReadyRoll.Data.Schema.SSDT.targets" />
