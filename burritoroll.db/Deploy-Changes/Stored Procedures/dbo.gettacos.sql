@@ -1,0 +1,12 @@
+﻿IF OBJECT_ID('[dbo].[gettacos]') IS NOT NULL
+	DROP PROCEDURE [dbo].[gettacos];
+
+GO
+SET ANSI_NULLS ON
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE PROCEDURE dbo.gettacos
+AS
+SELECT NAME,price
+FROM dbo.tacos
+GO

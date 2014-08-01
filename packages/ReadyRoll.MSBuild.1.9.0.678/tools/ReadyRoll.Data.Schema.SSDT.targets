@@ -1,0 +1,556 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup Condition="$(MSBuildBinPath.Contains('\Framework64\'))">
+    <__is64bitMSBuildRunner>True</__is64bitMSBuildRunner>
+  </PropertyGroup>
+
+  <UsingTask Condition="$(__is64bitMSBuildRunner) != 'True'" AssemblyFile="$(ReadyRollExtensionPath)ReadyRoll.dll" TaskName="DBBuildTask" />
+  <UsingTask Condition="$(__is64bitMSBuildRunner) != 'True'" AssemblyFile="$(ReadyRollExtensionPath)ReadyRoll.dll" TaskName="DBDeployTask" />
+  <UsingTask Condition="$(__is64bitMSBuildRunner) != 'True'" AssemblyFile="$(ReadyRollExtensionPath)ReadyRoll.dll" TaskName="DBPatchTask" />
+  <PropertyGroup Condition="'$(VisualStudioVersion)' == ''">
+    <VisualStudioVersion>10.0</VisualStudioVersion>
+  </PropertyGroup>
+  <PropertyGroup>
+    <SSDTExtensionPath Condition="'$(SSDTExtensionPath)' == ''">$(MSBuildThisFileDirectory)</SSDTExtensionPath>
+    <SqlTargetName Condition="'$(SqlTargetName)' == ''">$(MSBuildProjectName.Replace('.sqlproj', ''))</SqlTargetName>
+    <TargetDatabaseSuffix Condition="'$(TargetDatabaseSuffix)' == ''"></TargetDatabaseSuffix>
+    <TargetDatabase Condition="'$(TargetDatabase)' == ''">$(SqlTargetName)$(TargetDatabaseSuffix)</TargetDatabase>
+    <GenerateOctopusNuPkg Condition="'$(GenerateOctopusNuPkg)' == ''">False</GenerateOctopusNuPkg>
+    <GenerateOctopusNuPkg Condition="'$(RunOctoPack)' == 'True'">True</GenerateOctopusNuPkg>
+    <SkipDriftAnalysis Condition="'$(SkipDriftAnalysis)' == ''">False</SkipDriftAnalysis>
+    <SkipDeployPreview Condition="'$(SkipDeployPreview)' == ''">False</SkipDeployPreview>
+    <DatabasePackageVersion Condition="'$(DatabasePackageVersion)' == ''">$(OctoPackPackageVersion)</DatabasePackageVersion>
+  </PropertyGroup>
+  <PropertyGroup>
+    <PreDeploymentSubFolder Condition="'$(PreDeploymentSubFolder)' == ''">Pre-Deployment</PreDeploymentSubFolder>
+    <DeployOnceSubFolder Condition="'$(DeployOnceSubFolder)' == ''">Deploy-Once</DeployOnceSubFolder>
+    <DeployChangesSubFolder Condition="'$(DeployChangesSubFolder)' == ''">Deploy-Changes</DeployChangesSubFolder>
+    <PostDeploymentSubFolder Condition="'$(PostDeploymentSubFolder)' == ''">Post-Deployment</PostDeploymentSubFolder>
+  </PropertyGroup>
+  <ItemGroup>
+    <__buildInput Include="$(PreDeploymentSubFolder)\**\*.sql" />
+    <__buildInput Include="$(DeployOnceSubFolder)\**\*.sql" />
+    <__buildInput Include="$(DeployChangesSubFolder)\**\*.sql" />
+    <__buildInput Include="$(PostDeploymentSubFolder)\**\*.sql" />
+  </ItemGroup>
+  <Import Condition="Exists('$(SSDTExtensionPath)Microsoft.Data.Tools.Schema.SqlTasks.targets')" Project="$(SSDTExtensionPath)Microsoft.Data.Tools.Schema.SqlTasks.targets" />
+  <PropertyGroup Condition="'$(GenerateOctopusNuPkg)' == 'True'">
+    <!-- ReadyRoll Octopus integration properties -->
+    <OctopusTargetsFilePath Condition="'$(OctopusTargetsFilePath)' == ''">$(MSBuildThisFileDirectory)octopack\targets\OctoPack.targets</OctopusTargetsFilePath>
+    <SkipVariableValidation Condition="'$(SkipVariableValidation)' == ''">False</SkipVariableValidation>
+
+    <!-- Octopus properties -->
+    <OctopusPackageConfiguration Condition="'$(OctopusPackageConfiguration)' == ''">Release</OctopusPackageConfiguration>
+    <OctopusNuSpecFileName Condition="'$(OctopusNuSpecFileName)' == ''">$(MSBuildProjectName.Replace('.sqlproj', '')).nuspec</OctopusNuSpecFileName>
+    <OctopusTemporaryDirectory Condition="'$(OctopusTemporaryDirectory)' == ''">$(IntermediateOutputPath.TrimEnd('\'))\NuGet-temp</OctopusTemporaryDirectory>
+    <RunOctoPack Condition="'$(GenerateOctopusNuPkg)' == 'True' and '$(RunOctoPack)'==''">True</RunOctoPack>
+    <OctoPackNuSpecFileName Condition="'$(OctoPackNuSpecFileName)'==''">$(IntermediateOutputPath.TrimEnd('\'))\$(OctopusNuSpecFileName)</OctoPackNuSpecFileName>
+  </PropertyGroup>
+  <Import Condition="'$(GenerateOctopusNuPkg)' == 'True'" Project="$(OctopusTargetsFilePath)" />
+  <PropertyGroup>
+    <BuildDependsOn>
+      $(BuildDependsOn);
+      SqlOctopusForFileListAbsolute;
+      SqlCopyIncrementalDeployScript
+    </BuildDependsOn>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <CreateScriptFileName>$(SqlTargetName)_Package.sql</CreateScriptFileName>
+    <CreateScriptDeployFileName>$(SqlTargetName)_DeployPackage.ps1</CreateScriptDeployFileName>
+    <DeployScriptFileName>$(SqlTargetName).sql</DeployScriptFileName>
+    <DriftSyncScriptFileName>$(SqlTargetName)_ReSync.sql</DriftSyncScriptFileName>
+    <DeployPreviewReportFileName>$(SqlTargetName).html</DeployPreviewReportFileName>
+    <DriftReportFileName>$(SqlTargetName)_ReSync.html</DriftReportFileName>
+  </PropertyGroup>
+  <PropertyGroup>
+    <GenerateCreateScript Condition="'$(GenerateCreateScript)' == ''">False</GenerateCreateScript>
+    <GenerateOctopusNuPkg Condition="'$(GenerateOctopusNuPkg)' == ''">False</GenerateOctopusNuPkg>
+    <GenerateSqlPackage Condition="'$(GenerateSqlPackage)' == ''">False</GenerateSqlPackage>
+    <__outputPackageScript>False</__outputPackageScript>
+    <__outputPackageScript Condition="'$(GenerateSqlPackage)' == 'True' or '$(GenerateCreateScript)' == 'True' or '$(GenerateOctopusNuPkg)' == 'True'">True</__outputPackageScript>
+    <__outputPackageBatchFile>False</__outputPackageBatchFile>
+    <__outputPackageBatchFile Condition="'$(GenerateSqlPackage)' == 'True' or '$(GenerateCreateScript)' == 'True'">True</__outputPackageBatchFile>
+
+    <ScriptTargetPath Condition="'$(__outputPackageScript)' == 'True'">$(TargetDir)$(CreateScriptFileName)</ScriptTargetPath>
+    <ScriptTargetPath Condition="'$(__outputPackageScript)' != 'True'">$(TargetDir)$(DeployScriptFileName)</ScriptTargetPath>
+    <DriftSyncTargetPath Condition="'$(SkipDriftAnalysis)' != 'True' and '$(DriftSyncTargetPath)' == ''">$(TargetDir)$(DriftSyncScriptFileName)</DriftSyncTargetPath>
+    <DacPacTargetPath Condition="'$(GenerateCreateScript)' == 'True' and '$(DacPacTargetPath)' == ''">$(SqlTargetPath)</DacPacTargetPath>
+  </PropertyGroup>
+  <PropertyGroup>
+    <MSBuildAllProjects>
+      $(MSBuildAllProjects);
+      $(MSBuildThisFileDirectory)$(MSBuildThisFile);
+    </MSBuildAllProjects>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(SolutionName)' != '' and '$(SolutionName)' != '*Undefined*' and '$(LocalDbServer)' == '' and '$(BuildingInsideVisualStudio)' == 'true'">
+    <LocalDbServer Condition="'$(VisualStudioVersion)' == '10.0'">(localdb)\$(SolutionName.Replace('.', '_').Replace('%27', '_').Replace('@', '_').Replace(';', '_').PadRight(20).Substring(0, 20).Trim())</LocalDbServer>
+    <LocalDbServer Condition="'$(VisualStudioVersion)' == '11.0' or '$(VisualStudioVersion)' == '12.0'">(localdb)\Projects</LocalDbServer>
+    <LocalDbConnectionString Condition="'$(LocalDbConnectionString)' == ''">Data Source=$(LocalDbServer);Initial Catalog=$(TargetDatabase);Integrated Security=True;Pooling=False;Connect Timeout=30</LocalDbConnectionString>
+  </PropertyGroup>
+  <PropertyGroup>
+    <SuppressConnectionWarnings Condition="'$(SuppressConnectionWarnings)' == ''">False</SuppressConnectionWarnings>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(BuildingInsideVisualStudio)' == 'true'">
+    <FinalDefaultConnectionString Condition="$(DefaultConnectionString) != ''">$(DefaultConnectionString)</FinalDefaultConnectionString>
+    <FinalDefaultConnectionString Condition="$(FinalDefaultConnectionString) == '' and $(LocalDbConnectionString) != ''">$(LocalDbConnectionString)</FinalDefaultConnectionString>
+  </PropertyGroup>
+  <PropertyGroup>
+    <FinalTargetConnectionString Condition="'$(TargetServer)' != '' and '$(TargetUserName)' == ''">Data Source=$(TargetServer);Integrated Security=True;Pooling=False</FinalTargetConnectionString>
+    <FinalTargetConnectionString Condition="'$(TargetServer)' != '' and '$(TargetUserName)' != ''">Data Source=$(TargetServer);Integrated Security=False;Pooling=False;User ID=$(TargetUserName);Password=$(TargetPassword)</FinalTargetConnectionString>
+    <FinalTargetConnectionString Condition="'$(FinalTargetConnectionString)' == '' and '$(TargetConnectionString)' != ''">$(TargetConnectionString)</FinalTargetConnectionString>
+    <FinalTargetConnectionString Condition="'$(FinalTargetConnectionString)' == '' and '$(TargetConnectionString)' == '' and '$(FinalDefaultConnectionString)' != ''">$(FinalDefaultConnectionString)</FinalTargetConnectionString>
+    <FinalTargetDatabase Condition="'$(FinalTargetDatabase)' == ''">$(TargetDatabase)</FinalTargetDatabase>
+
+    <UseTargetAsShadow Condition="'$(UseTargetAsShadow)' == ''">false</UseTargetAsShadow>
+    <FinalShadowConnectionString Condition="'$(ShadowServer)' != '' and '$(ShadowConnectionString)' == '' and '$(ShadowUserName)' == ''">Data Source=$(ShadowServer);Integrated Security=True;Pooling=False</FinalShadowConnectionString>
+    <FinalShadowConnectionString Condition="'$(ShadowServer)' != '' and '$(ShadowConnectionString)' == '' and '$(ShadowUserName)' != ''">Data Source=$(ShadowServer);Integrated Security=False;Pooling=False;User ID=$(ShadowUserName);Password=$(ShadowPassword)</FinalShadowConnectionString>
+    <FinalShadowConnectionString Condition="'$(FinalShadowConnectionString)' == '' and '$(ShadowConnectionString)' != ''">$(ShadowConnectionString)</FinalShadowConnectionString>
+    <FinalShadowConnectionString Condition="'$(FinalShadowConnectionString)' == '' and '$(ShadowConnectionString)' == '' and '$(FinalDefaultConnectionString)' != '' and '$(AlwaysUseDefaultConnectionForShadowDatabase)'=='true'">$(FinalDefaultConnectionString)</FinalShadowConnectionString>
+    <FinalShadowConnectionString Condition="'$(FinalShadowConnectionString)' == '' and '$(ShadowConnectionString)' == '' and ('$(BuildingInsideVisualStudio)' == 'true' or '$(UseTargetAsShadow)' == 'true')">$(FinalTargetConnectionString)</FinalShadowConnectionString>
+    <FinalShadowDatabase Condition="'$(ShadowDatabase)' != ''">$(ShadowDatabase)</FinalShadowDatabase>
+    <FinalShadowDatabase Condition="'$(ShadowDatabase)' == ''">$(FinalTargetDatabase)_$(USERNAME)_SHADOW</FinalShadowDatabase>
+  </PropertyGroup>
+  <PropertyGroup>
+    <SkipProjectVerification Condition="'$(SkipProjectVerification)' == ''">False</SkipProjectVerification>
+    <SkipTargetPatch Condition="'$(SkipTargetPatch)' == ''">False</SkipTargetPatch>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DBDeployOnBuildVS Condition="$(DBDeployOnBuildVS)=='' and $(BuildingInsideVisualStudio)=='true' and $(ReadyRollDeploymentMode)=='DeployOnBuild'">True</DBDeployOnBuildVS>
+    <DBDeployOnNewDatabaseBuild Condition="$(DBDeployOnNewDatabaseBuild)=='' and $(BuildingInsideVisualStudio)=='true' and $(ReadyRollDeploymentMode)=='NewTargetDatabaseBuild' and $(DBDeployOnBuildVS)!='True'">True</DBDeployOnNewDatabaseBuild>
+    <DBDeployOnBuild Condition="'$(DBDeployOnBuild)' == ''">False</DBDeployOnBuild>
+    <DBReSyncOnBuild Condition="'$(DBReSyncOnBuild)' == ''">False</DBReSyncOnBuild>
+  </PropertyGroup>
+
+  <Target Name="SqlProjectBuild"
+          Inputs="@(__buildInput);$(MSBuildProjectFullPath);$(MSBuildAllProjects);@(ReferencePath)"
+          Outputs="@(__buildInput->'$(ScriptTargetPath)')"
+          DependsOnTargets="$(SqlBuildDependsOn);SqlGetDeployPs1FileLines">
+
+    <PropertyGroup>
+      <DatabasePackageVersion Condition="'$(DatabasePackageVersion)' == ''">$(OctoPackPackageVersion)</DatabasePackageVersion>
+    </PropertyGroup>
+    <GetAssemblyIdentity AssemblyFiles="$(IntermediateOutputPath)$(TargetFileName)" Condition="'$(DatabasePackageVersion)' == ''">
+      <Output TaskParameter="Assemblies" ItemName="AssemblyIdentities"/>
+    </GetAssemblyIdentity>
+    <PropertyGroup>
+      <DatabasePackageVersion Condition="'$(DatabasePackageVersion)' == ''">%(AssemblyIdentities.Version)</DatabasePackageVersion>
+    </PropertyGroup>
+
+    <DBBuildTask	DatabaseSchemaProviderName="$(DSP)"
+						ProjectFolder="$(MSBuildProjectDirectory)"
+						GenerateCreateScript="$(__outputPackageScript)"
+						GenerateOctopusNuPkg="$(GenerateOctopusNuPkg)"
+						DeploymentScriptName="$(CreateScriptFileName)"
+						DatabaseName="$(FinalTargetDatabase)"
+						OutputDirectory="$(IntermediateOutputPath)"
+						PropertiesFile="@(PropertiesFile->'%(FullPath)')"
+						Scripts="@(__buildInput->'%(FullPath)')"
+						ShadowConnectionString="$(FinalShadowConnectionString)"
+						ShadowDatabase="$(FinalShadowDatabase)"
+            DacPacTargetPath="$(DacPacTargetPath)"
+            DatabasePackageVersion="$(DatabasePackageVersion)"
+            SolutionDir="$(SolutionDir)"
+		>
+      <Output TaskParameter="IntermediateFileWrites" ItemName="FileWrites"/>
+      <Output TaskParameter="OutputFileWrites" ItemName="OutputFileWrites"/>
+    </DBBuildTask>
+
+    <Move SourceFiles="@(OutputFileWrites)"
+          DestinationFolder="$(TargetDir)"
+    />
+
+    <WriteLinesToFile	File="$(TargetDir)$(CreateScriptDeployFileName)"
+						Lines="@(DeployPs1FileLines)"
+						Overwrite="true"
+						Condition="$(__outputPackageBatchFile) == 'True' and !Exists('$(CreateScriptDeployFileName)')"
+  	/>
+    <Copy	SourceFiles="$(CreateScriptDeployFileName)"
+			DestinationFolder="$(TargetDir)"
+			Condition="$(__outputPackageBatchFile) == 'True' and Exists('$(CreateScriptDeployFileName)')"
+    />
+    <ItemGroup>
+      <PackageDeployFiles Include="$(TargetDir)$(CreateScriptDeployFileName)" />
+    </ItemGroup>
+    <ItemGroup>
+      <FileWrites Include="@(PackageDeployFiles)" />
+      <OutputFileWrites Include="@(PackageDeployFiles)" />
+    </ItemGroup>
+  </Target>
+
+  <PropertyGroup>
+    <SetupSqlBuildOutputsDependsOn>
+      $(SetupSqlBuildOutputsDependsOn);
+      ReadyRollSetupSqlBuildOutputsDependsOn
+    </SetupSqlBuildOutputsDependsOn>
+  </PropertyGroup>
+  <Target Name="ReadyRollSetupSqlBuildOutputsDependsOn">
+    <CreateItem Include="$(ScriptTargetPath)" Condition="$(__outputPackageScript) == 'True'">
+      <Output TaskParameter="Include" ItemName="SqlBuildOutputItem" />
+      <Output TaskParameter="Include" ItemName="FileWrites" />
+    </CreateItem>
+    <CreateItem Include="$(TargetDir)$(CreateScriptDeployFileName)" Condition="$(__outputPackageBatchFile) == 'True'">
+      <Output TaskParameter="Include" ItemName="SqlBuildOutputItem" />
+      <Output TaskParameter="Include" ItemName="FileWrites" />
+    </CreateItem>
+  </Target>
+
+  <Target Name="SqlOctopusForFileListAbsolute" Condition="'$(GenerateOctopusNuPkg)' == 'True'">
+    <CreateItem Include="$(TargetDir)\*.nupkg">
+      <Output TaskParameter="Include" ItemName="OctopusFileWrites" />
+    </CreateItem>
+    <CreateItem Include="$(OctopusTemporaryDirectory)\**">
+      <Output TaskParameter="Include" ItemName="OctopusFileWrites" />
+    </CreateItem>
+    <WriteLinesToFile	File="$(IntermediateOutputPath)$(MSBuildProjectFile).FileListAbsolute.txt"
+						Lines="@(OctopusFileWrites->'%(FullPath)')"
+						Overwrite="false"
+						Encoding="UTF-8"
+    />
+  </Target>
+
+  <Target Name="SqlCopyIncrementalDeployScript" Condition="Exists('$(IntermediateOutputPath)$(DeployScriptFileName)')">
+    <Copy       SourceFiles="$(IntermediateOutputPath)$(DeployScriptFileName)"
+                DestinationFolder="$(TargetDir)"
+        />
+    <Copy       SourceFiles="$(IntermediateOutputPath)$(DriftSyncScriptFileName)"
+                DestinationFolder="$(TargetDir)"
+                Condition="'$(SkipDriftAnalysis)' != 'True' and Exists('$(IntermediateOutputPath)$(DriftSyncScriptFileName)')">
+      <Output TaskParameter="CopiedFiles" ItemName="IncrementalDeployFileWrites" />
+    </Copy>
+    <Copy       SourceFiles="$(IntermediateOutputPath)$(DeployPreviewReportFileName)"
+                DestinationFolder="$(TargetDir)"
+                Condition="'$(SkipDeployPreview)' != 'True' and Exists('$(IntermediateOutputPath)$(DeployPreviewReportFileName)')">
+      <Output TaskParameter="CopiedFiles" ItemName="IncrementalDeployFileWrites" />
+    </Copy>
+    <Copy       SourceFiles="$(IntermediateOutputPath)$(DriftReportFileName)"
+                DestinationFolder="$(TargetDir)"
+                Condition="'$(SkipDriftAnalysis)' != 'True' and Exists('$(IntermediateOutputPath)$(DriftReportFileName)')">
+      <Output TaskParameter="CopiedFiles" ItemName="IncrementalDeployFileWrites" />
+    </Copy>
+    <WriteLinesToFile	File="$(IntermediateOutputPath)$(MSBuildProjectFile).FileListAbsolute.txt"
+						Lines="@(IncrementalDeployFileWrites->'%(FullPath)')"
+						Overwrite="false"
+						Encoding="UTF-8"
+    />
+  </Target>
+
+  <Target Name="SqlBuild"
+          DependsOnTargets="$(SqlBuildDependsOn)">
+    <ItemGroup>
+      <IllegalBuildTypeAssets Include="@(Build)" />
+      <IllegalBuildTypeAssets Include="@(PreDeploy)" />
+      <IllegalBuildTypeAssets Include="@(PostDeploy)" />
+      <IllegalBuildTypeAssets Include="@(BuildExtensionConfiguration)" />
+    </ItemGroup>
+
+    <Message Text="Using ReadyRoll toolpath: $(MSBuildThisFileFullPath)" Importance="high" />
+    <Message Text="Using SSDT toolpath: $(SSDTExtensionPath)Microsoft.Data.Tools.Schema.SqlTasks.targets" Importance="normal" />
+    <Error Condition="!Exists('$(SSDTExtensionPath)Microsoft.Data.Tools.Schema.SqlTasks.targets')" Text="Cannot find SQL Server Data Tools (SSDT). Please install this Visual Studio 2012 component or download SSDT for Visual Studio 2010 from http://msdn.microsoft.com/en-us/jj650014" />
+    <Error Condition="@(IllegalBuildTypeAssets) != ''" Text="This project asset has an invalid Build attribute set. Please set its Build attribute to None." File="%(IllegalBuildTypeAssets.FullPath)" />
+    <Error Condition="$(__is64bitMSBuildRunner) == 'True'" Text="The x64 version of MSBuild has been used to initiate this build, however this is currently not supported by ReadyRoll. Please use the x86 version of MSBuild for this project/solution. If using TFS Build, set this by opening your build process template, clicking Process... Advanced... and selecting x86 in the MSBuild Platform drop-down. If using TeamCity, change your build configuration's build runner &quot;Run platform&quot; setting to x86. If building from the commandline, ensure that the following MSBuild executable path is used: C:\Windows\Microsoft.NET\Framework\v4.0.30319\MSBuild.exe" File="%(IllegalBuildTypeAssets.FullPath)" />
+    <Error Condition="$(GenerateOctopusNuPkg) == 'True' and !Exists('$(OctopusNuSpecFileName)')" Text="An Octopus NuSpec file could not be found matching the name &quot;$(OctopusNuSpecFileName)&quot;. To resolve this, open Project Settings and click &quot;Add/Edit NuSpec file&quot;." File="$(MSBuildProjectDirectory)\$(OctopusNuSpecFileName)" />
+
+    <!-- Needed to ensure that the file is cleaned up to trigger a full project build when the target connection isn't supplied -->
+    <Delete Condition="'$(FinalTargetConnectionString)' == '' and Exists('$(TargetDir)$(DeployScriptFileName)')" Files="$(TargetDir)$(DeployScriptFileName)" />
+
+    <ItemGroup>
+      <_SqlReferencedAssemblyFiles Include="@(ReferencePath)" Condition="%(ReferencePath.IsModelAware) == 'True'" />
+      <_SqlReferencedAssemblyFiles Include="@(_ReferenceRelatedPaths)" Condition="%(_ReferenceRelatedPaths.IsModelAware) == 'True'" />
+    </ItemGroup>
+    <Copy	SourceFiles="@(_SqlReferencedAssemblyFiles)"
+			DestinationFolder="$(IntermediateOutputPath)"
+    >
+      <Output TaskParameter="CopiedFiles" ItemName="OutputFileWrites" />
+      <Output TaskParameter="CopiedFiles" ItemName="FileWrites" />
+    </Copy>
+
+    <CallTarget Targets="SqlProjectBuild" Condition="'$(SkipProjectVerification)' != 'True'"/>
+
+    <!-- Needed to ensure that the Incremental Deployment script (sql) and accompanying Deployment Preview report (html) is cleaned up prior to Octopus package creation -->
+    <Delete Condition="Exists('$(TargetDir)$(DeployScriptFileName)')" Files="$(TargetDir)$(DeployScriptFileName)" />
+    <Delete Condition="Exists('$(TargetDir)$(DeployPreviewReportFileName)')" Files="$(TargetDir)$(DeployPreviewReportFileName)" />
+
+    <!-- Needed to ensure that the Drift-correction script (sql) and accompanying Drift-analysis report (html) is cleaned up prior to Octopus package creation -->
+    <Delete Condition="Exists('$(TargetDir)$(DriftSyncScriptFileName)')" Files="$(TargetDir)$(DriftSyncScriptFileName)" />
+    <Delete Condition="Exists('$(TargetDir)$(DriftReportFileName)')" Files="$(TargetDir)$(DriftReportFileName)" />
+
+    <Message Condition="'$(SuppressConnectionWarnings)' == 'False' and '$(FinalShadowConnectionString)' == ''" Importance="high" Text="**Tip: To enable full verification of your database project, pass in values for the TargetServer and ShadowServer properties. This will build or rebuild a separate copy of your database, validating the order and content of all scripts. It will also produce a deployment preview script and report. For more information see this article on ReadyRoll Continuous Integration: http://doc.ready-roll.com/pages/viewpage.action?pageId=1278070 . To hide this message, specify SuppressConnectionWarnings=True." />
+
+    <CallTarget Targets="SqlOutputOctopusFiles" Condition="'$(GenerateOctopusNuPkg)' == 'True'"/>
+
+    <CallTarget Targets="SqlPatchBuild" Condition="'$(SkipTargetPatch)' != 'True' and '$(FinalTargetConnectionString)' != ''" />
+  </Target>
+
+  <Target Name="SqlGetDeployPs1FileLines">
+    <ItemGroup>
+      <DeployPs1FileLines Include="# Variable validation"/>
+      <DeployPs1FileLines Include="function Get-SqlScalarValue($variableName, $ConnectionString, $scalarQuery)	{		Try		{			$SqlConnection = New-Object System.Data.SqlClient.SqlConnection%3B			$SqlConnection.ConnectionString = $ConnectionString%3B			$SqlConnection.Open()%3B				$SqlCmd = New-Object System.Data.SqlClient.SqlCommand%3B			$SqlCmd.CommandText = $scalarQuery%3B			$SqlCmd.Connection = $sqlConnection%3B 				$scalarValue = $SqlCmd.ExecuteScalar()%3B 			if ($scalarValue -eq '') { Write-Warning &quot;Could not determine a value for $variableName variable. An empty string will be supplied to the deployment.&quot;%3B }%3B							$SqlConnection.Close()%3B						return $scalarValue%3B		}		Catch		{			Write-Warning &quot;Could not retrieve a value for $variableName : $_ &quot; %3B			return &quot;&quot;%3B		}	}		"/>
+      <DeployPs1FileLines Include="function Get-ScriptDirectory {$Invocation = (Get-Variable MyInvocation -Scope 1).Value%3B Split-Path $Invocation.MyCommand.Path }"/>
+      <DeployPs1FileLines Include="Try { "/>
+      <DeployPs1FileLines Include="if ($ReleaseVersion -eq $null) { $ReleaseVersion = ''%3B if ($OctopusEnvironmentName -eq $null) { $Host.UI.WriteWarningLine(&quot;As the ReleaseVersion variable is not set, the [__MigrationLog].[release_version] column will be set to NULL for any pending migrations.&quot;) } } "/>
+      <DeployPs1FileLines Include="if ($OctopusReleaseNumber -ne $null) { $ReleaseVersion = $OctopusReleaseNumber } "/>
+      <DeployPs1FileLines Include="if ($SkipOctopusVariableValidation -ne $null) { $SkipVariableValidation = $SkipOctopusVariableValidation } "/>
+      <DeployPs1FileLines Include="if ($UseSqlCmdVariableDefaults -eq $null) { $UseSqlCmdVariableDefaults = &quot;true&quot; }"/>
+      <DeployPs1FileLines Include="if ($UseSqlCmdVariableDefaults -eq &quot;true&quot;) "/>
+      <DeployPs1FileLines Include="{ "/>
+      <DeployPs1FileLines Include="Write-Host 'If you require that all SqlCmd variable values be passed in explicitly, specify UseSqlCmdVariableDefaults=False.'"/>
+      <DeployPs1FileLines Condition="%(SqlCmdVariable.Identity) != ''" Include="if ($%(SqlCmdVariable.Identity) -eq $null) { Write-Host %27Using default value for %(SqlCmdVariable.Identity) variable: $([System.String]::Copy(&quot;%(SqlCmdVariable.DefaultValue)&quot;).Replace(&quot;&#39;&quot;, &quot;&#39;&#39;&quot;))%27%3B $%(SqlCmdVariable.Identity)=%27$([System.String]::Copy(&quot;%(SqlCmdVariable.DefaultValue)&quot;).Replace(&quot;&#39;&quot;, &quot;&#39;&#39;&quot;))%27 }"/>
+      <DeployPs1FileLines Condition="$(FinalTargetDatabase) != ''" Include="if ($DatabaseName -eq $null) { Write-Host 'Using default value for DatabaseName variable: $(FinalTargetDatabase)'%3B $DatabaseName='$(FinalTargetDatabase.Replace(&quot;&#39;&quot;, &quot;&#39;&#39;&quot;))' }"/>
+      <DeployPs1FileLines Include="if ($ForceDeployWithoutBaseline -eq $null) { Write-Host 'Using default value for ForceDeployWithoutBaseline variable: False'%3B $ForceDeployWithoutBaseline = 'False' } "/>
+      <DeployPs1FileLines Condition="$(OctoOptionDeployToLocalInstance) == 'True'" Include="if ($DatabaseServer -eq $null -and $OctoOptionDeployToLocalInstance -ne &quot;false&quot;) { Write-Host '**Deploying to (local) because OctoOptionDeployToLocalInstance=True'%3B $DatabaseServer='(local)' }"/>
+      <DeployPs1FileLines Include="} "/>
+      <DeployPs1FileLines Condition="'$(SkipVariableValidation)' != 'True'" Include="if ($DatabaseServer -eq $null) { Throw 'DatabaseServer variable was not provided.' }"/>
+      <DeployPs1FileLines Condition="'$(SkipVariableValidation)' != 'True'" Include="if ($DatabaseName -eq $null) { Throw 'DatabaseName variable was not provided.' }"/>
+      <DeployPs1FileLines Condition="'$(SkipVariableValidation)' != 'True'" Include="if ($ForceDeployWithoutBaseline -eq $null) { Throw 'ForceDeployWithoutBaseline variable was not provided.' }"/>
+      <DeployPs1FileLines Condition="'$(SkipVariableValidation)' != 'True'" Include="@(SqlCmdVariable->'if ($%(Identity) -eq $null) { Throw %27%(Identity) variable was not provided.%27 }')"/>
+      <DeployPs1FileLines Include="if ($DatabaseUserName -eq $null) { 'Using Windows Authentication (To use SQL Server Authentication instead, specify the DatabaseUserName and DatabasePassword variables)'%3B $SqlCmdAuth = '-E'%3B $ConnectionString = 'Data Source=' + $DatabaseServer + '%3BIntegrated Security=SSPI'%3B } else { if ($DatabasePassword -eq $null) { Throw 'If a DatabaseUserName is specified, the DatabasePassword variable must also be provided.' }%3B 'Using SQL Server Authentication'%3B $SqlCmdAuth = '-U &quot;' + $DatabaseUserName.Replace('&quot;', '&quot;&quot;') + '&quot; -P &quot;' + $DatabasePassword.Replace('&quot;', '&quot;&quot;') + '&quot;'%3B $ConnectionString = 'Data Source=' + $DatabaseServer + '%3BUser Id=' + $DatabaseUserName + '%3BPassword=' + $DatabasePassword%3B}"/>
+      <DeployPs1FileLines Condition="'$(DSP)' == 'Microsoft.Data.Tools.Schema.Sql.SqlAzureDatabaseSchemaProvider'" Include="$DefaultFilePrefix = &quot;&quot;%3B $DefaultDataPath = &quot;&quot;%3B $DefaultLogPath = &quot;&quot;%3B $DefaultBackupPath = &quot;&quot;%3B"/>
+      <DeployPs1FileLines Condition="'$(DSP)' != 'Microsoft.Data.Tools.Schema.Sql.SqlAzureDatabaseSchemaProvider'" Include="if ($DefaultFilePrefix -eq $null) { Write-Host 'Using default value for DefaultFilePrefix variable: $(FinalTargetDatabase)'%3B $DefaultFilePrefix='$(FinalTargetDatabase.Replace(&quot;&#39;&quot;, &quot;&#39;&#39;&quot;))' }"/>
+      <DeployPs1FileLines Condition="'$(DSP)' != 'Microsoft.Data.Tools.Schema.Sql.SqlAzureDatabaseSchemaProvider'" Include="if ($DefaultDataPath -eq $null) { $DefaultDataPath = Get-SqlScalarValue &quot;DefaultDataPath&quot; $ConnectionString &quot;declare @DefaultPath nvarchar(512)%3B	exec master.dbo.xp_instance_regread N'HKEY_LOCAL_MACHINE', N'Software\Microsoft\MSSQLServer\MSSQLServer', N'DefaultData', @DefaultPath output%3B		if (@DefaultPath is null)	begin		set @DefaultPath = (select F.physical_name from sys.master_files F where F.database_id=db_id('master') and F.type = 0)%3B		select @DefaultPath=substring(@DefaultPath, 1, len(@DefaultPath) - charindex('\', reverse(@DefaultPath)))%3B	end		select isnull(@DefaultPath + '\', '') DefaultData&quot;%3B Write-Host 'Using default value for DefaultDataPath variable:' $DefaultDataPath%3B }"/>
+      <DeployPs1FileLines Condition="'$(DSP)' != 'Microsoft.Data.Tools.Schema.Sql.SqlAzureDatabaseSchemaProvider'" Include="if ($DefaultLogPath -eq $null) { $DefaultLogPath = Get-SqlScalarValue &quot;DefaultLogPath&quot; $ConnectionString &quot;declare @DefaultPath nvarchar(512)%3B	exec master.dbo.xp_instance_regread N'HKEY_LOCAL_MACHINE', N'Software\Microsoft\MSSQLServer\MSSQLServer', N'DefaultLog', @DefaultPath output%3B		if (@DefaultPath is null)	begin		set @DefaultPath = (select F.physical_name from sys.master_files F where F.database_id=db_id('master') and F.type = 1)%3B		select @DefaultPath=substring(@DefaultPath, 1, len(@DefaultPath) - charindex('\', reverse(@DefaultPath)))%3B	end		select isnull(@DefaultPath + '\', '') DefaultData&quot;%3B Write-Host 'Using default value for DefaultLogPath variable:' $DefaultLogPath%3B }"/>
+      <DeployPs1FileLines Condition="'$(DSP)' != 'Microsoft.Data.Tools.Schema.Sql.SqlAzureDatabaseSchemaProvider'" Include="if ($DefaultBackupPath -eq $null) { $DefaultBackupPath = Get-SqlScalarValue &quot;DefaultBackupPath&quot; $ConnectionString &quot;declare @DefaultBackup nvarchar(512)%3B	exec master.dbo.xp_instance_regread N'HKEY_LOCAL_MACHINE', N'Software\Microsoft\MSSQLServer\MSSQLServer', N'BackupDirectory', @DefaultBackup output%3B	select isnull(@DefaultBackup + '\', '') DefaultBackup%3B&quot;%3B Write-Host 'Using default value for DefaultBackupPath variable:' $DefaultBackupPath%3B }"/>
+      <DeployPs1FileLines Include="Write-Host &quot;Starting '$DatabaseName' Database Deployment to '$DatabaseServer'&quot;"/>
+      <DeployPs1FileLines Include="$SqlCmdVarArguments = 'DatabaseName=&quot;' + $DatabaseName.Replace('&quot;', '&quot;&quot;') + '&quot;'"/>
+      <DeployPs1FileLines Include="$SqlCmdVarArguments += ' ReleaseVersion=&quot;' + $ReleaseVersion.Replace('&quot;', '&quot;&quot;') + '&quot;'"/>
+      <DeployPs1FileLines Include="$SqlCmdVarArguments += ' ForceDeployWithoutBaseline=&quot;' + $ForceDeployWithoutBaseline.Replace('&quot;', '&quot;&quot;') + '&quot;'"/>
+      <DeployPs1FileLines Include="$SqlCmdVarArguments += ' DefaultFilePrefix=&quot;' + $DefaultFilePrefix.Replace('&quot;', '&quot;&quot;') + '&quot;'"/>
+      <DeployPs1FileLines Include="$SqlCmdVarArguments += ' DefaultDataPath=&quot;' + $DefaultDataPath.Replace('&quot;', '&quot;&quot;') + '&quot;'"/>
+      <DeployPs1FileLines Include="$SqlCmdVarArguments += ' DefaultLogPath=&quot;' + $DefaultLogPath.Replace('&quot;', '&quot;&quot;') + '&quot;'"/>
+      <DeployPs1FileLines Include="$SqlCmdVarArguments += ' DefaultBackupPath=&quot;' + $DefaultBackupPath.Replace('&quot;', '&quot;&quot;') + '&quot;'"/>
+      <DeployPs1FileLines Include="@(SqlCmdVariable->'$SqlCmdVarArguments += %27 %(Identity)=&quot;%27 + $%(Identity).Replace(%27&quot;%27, %27&quot;&quot;%27) + %27&quot;%27 ')"/>
+      <DeployPs1FileLines Include="$SqlCmdBase = 'sqlcmd.exe -b -S &quot;' + $DatabaseServer + '&quot; -v ' + $SqlCmdVarArguments "/>
+      <DeployPs1FileLines Condition="'$(DSP)' != 'Microsoft.Data.Tools.Schema.Sql.SqlAzureDatabaseSchemaProvider'" Include="$SqlCmd = $SqlCmdBase" />
+      <DeployPs1FileLines Condition="'$(DSP)' == 'Microsoft.Data.Tools.Schema.Sql.SqlAzureDatabaseSchemaProvider'" Include="$SqlCmd = $SqlCmdBase + ' -d &quot;' + $DatabaseName.Replace('&quot;', '&quot;&quot;') + '&quot;' " />
+      <DeployPs1FileLines Include="$SqlCmd = $SqlCmd + ' -i &quot;' + (Get-ScriptDirectory) + '\$(CreateScriptFileName)&quot;'" />
+      <DeployPs1FileLines Include="$SqlCmdWithAuth = $SqlCmd + ' ' + $SqlCmdAuth"/>
+      <DeployPs1FileLines Include="Write-Host $SqlCmd"/>
+      <DeployPs1FileLines Include="} Catch { "/>
+      <DeployPs1FileLines Include="   $Host.UI.WriteErrorLine(&quot;A validation error occurred: $_ &quot;)%3B"/>
+      <DeployPs1FileLines Condition="'$(SkipVariableValidation)' != 'True'" Include="   $Host.UI.WriteErrorLine(&quot;To bypass variable validation, pass this property value to MSBuild: SkipVariableValidation=True&quot;)%3B"/>
+      <DeployPs1FileLines Include="   if ($OctopusEnvironmentName -ne $null) { [Environment]::Exit(1) }%3B"/>
+      <DeployPs1FileLines Include="}"/>
+      <DeployPs1FileLines Include="# SQLCMD package deployment"/>
+      <DeployPs1FileLines Condition="'$(DSP)' == 'Microsoft.Data.Tools.Schema.Sql.SqlAzureDatabaseSchemaProvider'" Include="$SqlCmdCreateDatabase = $SqlCmdBase + ' ' + $SqlCmdAuth + ' -Q &quot;CREATE DATABASE [' + $DatabaseName.Replace('&quot;', '&quot;&quot;') + ']&quot;'"/>
+      <DeployPs1FileLines Condition="'$(DSP)' == 'Microsoft.Data.Tools.Schema.Sql.SqlAzureDatabaseSchemaProvider'" Include="Try { Write-Host &quot;Creating database $DatabaseName (if it doesn't already exist) &quot;%3B cmd /Q /C $SqlCmdCreateDatabase%3B if ($lastexitcode) { Write-Host &quot;Skipping database creation. Please disregard any error messages above.&quot; } } Catch { Write-Host &quot;An error occurred: $_ &quot; } "/>
+      <DeployPs1FileLines Include="Try { cmd /Q /C $SqlCmdWithAuth%3B if ($lastexitcode) { Throw 'sqlcmd.exe exited with a non-zero exit code.' } }"/>
+      <DeployPs1FileLines Include="Catch { $Host.UI.WriteErrorLine(&quot;A deployment error occurred: $_ &quot;)%3B if ($OctopusEnvironmentName -ne $null) { [Environment]::Exit(1)%3B } }"/>
+    </ItemGroup>
+  </Target>
+  <Target Name="SqlOutputOctopusFiles" DependsOnTargets="SqlGetDeployPs1FileLines">
+    <Copy	SourceFiles="$(OctopusNuSpecFileName)"
+			DestinationFolder="$(IntermediateOutputPath)"
+			Condition="Exists('$(OctopusNuSpecFileName)')"
+    />
+    <ItemGroup>
+      <OctopusDeployFiles Include="$(OctoPackNuSpecFileName)" />
+    </ItemGroup>
+
+    <WriteLinesToFile	File="$(TargetDir)Deploy.ps1"
+						Lines="@(DeployPs1FileLines)"
+						Overwrite="true"
+						Encoding="UTF-8"
+						Condition="!Exists('Deploy.ps1')"
+	  />
+    <Copy	SourceFiles="Deploy.ps1"
+			DestinationFolder="$(TargetDir)"
+			Condition="Exists('Deploy.ps1')"
+    />
+    <WriteLinesToFile	File="$(TargetDir)DeployFailed.ps1"
+						Lines="Write-Host &quot;Deployment to '$DatabaseServer' failed. Any open transactions have been rolled-back.&quot;"
+						Overwrite="true"
+						Encoding="UTF-8"
+						Condition="!Exists('DeployFailed.ps1')"
+	/>
+    <Copy	SourceFiles="DeployFailed.ps1"
+			DestinationFolder="$(TargetDir)"
+			Condition="Exists('DeployFailed.ps1')"
+    />
+    <ItemGroup>
+      <OctopusDeployFiles Include="$(TargetDir)Deploy.ps1" />
+      <OctopusDeployFiles Include="$(TargetDir)DeployFailed.ps1" />
+    </ItemGroup>
+    <ItemGroup>
+      <FileWrites Include="@(OctopusDeployFiles)" />
+    </ItemGroup>
+    <Message Text="Using OctoPack toolpath: $(OctopusTargetsFilePath)" Importance="normal" />
+  </Target>
+
+  <Target Name="SqlOutputPackageFiles">
+  </Target>
+
+  <Target Name="SqlDeploy"
+          Inputs="@(SqlDeployInputItem);@(__buildInput)"
+          Outputs="@(SqlDeployOutputItem)"
+          DependsOnTargets="$(SqlDeployDependsOn)">
+
+    <PropertyGroup>
+      <DeploymentScriptPath Condition="Exists('$(DeployScriptFilePath)')">$(DeployScriptFilePath)</DeploymentScriptPath>
+      <DeploymentScriptPath Condition="'$(DeploymentScriptPath)' == '' and Exists('$(IntermediateOutputPath)$(DeployScriptFileName)')">$(IntermediateOutputPath)$(DeployScriptFileName)</DeploymentScriptPath>
+      <DeploymentScriptPath Condition="'$(DeploymentScriptPath)' == '' and Exists('$(CreateScriptFilePath)')">$(CreateScriptFilePath)</DeploymentScriptPath>
+    </PropertyGroup>
+
+    <Error Condition="'$(FinalTargetConnectionString)' == ''" Text="Cannot deploy database: a value for the TargetServer or TargetConnectionString property was not provided." />
+    <Error Condition="'$(DeploymentScriptPath)' == ''" Text="Cannot deploy database: the project has not been built. Please call the Build target before Deploy or alternately pass in a value for the DeployScriptFilePath property containing the full path to the generated SQL file." />
+
+    <DBDeployTask		DatabaseSchemaProviderName="$(DSP)"
+             ProjectFolder="$(MSBuildProjectDirectory)"
+             DatabaseName="$(FinalTargetDatabase)"
+             ConnectionString="$(FinalTargetConnectionString)"
+             PropertiesFile="@(PropertiesFile->'%(FullPath)')"
+             DeployScriptFile="$(DeploymentScriptPath)"
+             Scripts="@(__buildInput->'%(FullPath)')"
+             SolutionDir="$(SolutionDir)"
+		/>
+  </Target>
+
+  <Target Name="ReSync">
+    <CallTarget Targets="SqlReSync" />
+  </Target>
+
+  <Target Name="SqlReSync"
+          Inputs="@(SqlDeployInputItem);@(__buildInput)"
+          Outputs="@(SqlDeployOutputItem)"
+          DependsOnTargets="$(SqlDeployDependsOn)">
+
+    <PropertyGroup>
+      <_reSyncScriptPath Condition="Exists('$(DriftSyncTargetPath)')">$(DriftSyncTargetPath)</_reSyncScriptPath>
+      <_reSyncScriptPath Condition="'$(_reSyncScriptPath)' == '' and Exists('$(IntermediateOutputPath)$(DriftSyncScriptFileName)')">$(IntermediateOutputPath)$(DriftSyncScriptFileName)</_reSyncScriptPath>
+    </PropertyGroup>
+
+    <Error Condition="'$(FinalTargetConnectionString)' == ''" Text="Cannot deploy drift-correction (database re-sync) script: a value for the TargetServer or TargetConnectionString property was not provided." />
+    <Message Condition="'$(_reSyncScriptPath)' == ''" Text="Database re-sync will not be performed because a drift-correction script was not generated." />
+
+    <DBDeployTask Condition="'$(_reSyncScriptPath)' != ''"
+             DatabaseSchemaProviderName="$(DSP)"
+             ProjectFolder="$(MSBuildProjectDirectory)"
+             DatabaseName="$(FinalTargetDatabase)"
+             ConnectionString="$(FinalTargetConnectionString)"
+             PropertiesFile="@(PropertiesFile->'%(FullPath)')"
+             DeployScriptFile="$(_reSyncScriptPath)"
+             Scripts="@(__buildInput->'%(FullPath)')"
+             SolutionDir="$(SolutionDir)"
+		/>
+  </Target>
+
+  <Target Name="SqlPublish"
+          Inputs="@(SqlPublishInputItem);@(__buildInput)"
+          Outputs="@(SqlPublishOutputItem)"
+          DependsOnTargets="$(SqlPublishDependsOn)">
+
+    <Error Text="ReadyRoll does not yet support the Publish target. Please use the Deploy target instead, optionally supplying the TargetServer or TargetConnectionString property." />
+
+  </Target>
+
+  <Target Name="SqlPatchBuild"
+          Inputs="@(SqlDeployInputItem);@(__buildInput)"
+          Outputs="@(SqlDeployOutputItem)"
+          DependsOnTargets="$(SqlBuildDependsOn);$(SqlDeployDependsOn)">
+
+    <PropertyGroup>
+      <DatabasePackageVersion Condition="'$(DatabasePackageVersion)' == ''">$(OctoPackPackageVersion)</DatabasePackageVersion>
+    </PropertyGroup>
+    <GetAssemblyIdentity AssemblyFiles="$(IntermediateOutputPath)$(TargetFileName)" Condition="'$(DatabasePackageVersion)' == ''">
+      <Output TaskParameter="Assemblies" ItemName="AssemblyIdentities"/>
+    </GetAssemblyIdentity>
+    <PropertyGroup>
+      <DatabasePackageVersion Condition="'$(DatabasePackageVersion)' == ''">%(AssemblyIdentities.Version)</DatabasePackageVersion>
+    </PropertyGroup>
+
+    <DBPatchTask		DatabaseSchemaProviderName="$(DSP)"
+						ProjectFolder="$(MSBuildProjectDirectory)"
+						DatabaseName="$(FinalTargetDatabase)"
+						OutputDirectory="$(IntermediateOutputPath)"
+						ConnectionString="$(FinalTargetConnectionString)"
+						PropertiesFile="@(PropertiesFile->'%(FullPath)')"
+						PatchScriptName="$(DeployScriptFileName)"
+						DriftSyncScriptFileName="$(DriftSyncScriptFileName)"
+						DeployPreviewReportFileName="$(DeployPreviewReportFileName)"
+						OctoPackNuSpecFilePath="$(OctoPackNuSpecFileName)"
+						DriftReportFileName="$(DriftReportFileName)"
+						Scripts="@(__buildInput->'%(FullPath)')"
+						ShadowConnectionString="$(FinalShadowConnectionString)"
+						ShadowDatabase="$(FinalShadowDatabase)"
+						SkipDriftAnalysis="$(SkipDriftAnalysis)"
+						SkipDeployPreview="$(SkipDeployPreview)"
+						DatabasePackageVersion="$(DatabasePackageVersion)"
+            SolutionDir="$(SolutionDir)"
+		>
+      <Output TaskParameter="IntermediateFileWrites" ItemName="FileWrites"/>
+      <Output TaskParameter="DatabaseCreatePending" PropertyName="DatabaseCreatePending"/>
+    </DBPatchTask>
+    <ItemGroup>
+      <FileWrites Include="$(TargetDir)$(DeployScriptFileName)" />
+      <!-- TODO Do need to manually copy the file to the TargetDir? <FileWrites Include="$(TargetDir)$(DriftSyncScriptFileName)" Condition="" />      -->
+    </ItemGroup>
+
+    <CallTarget Targets="SqlReSync" Condition="'$(DBReSyncOnBuild)'=='True'" />
+  </Target>
+
+  <Target Name="SqlDeployOnBuild" AfterTargets="SqlPatchBuild" Condition="$(DBDeployOnBuild)=='True'">
+    <Message Importance="High" Text="Automatically deploying during build because DBDeployOnBuild==True..." />
+    <CallTarget Targets="Deploy" />
+  </Target>
+
+  <Target Name="SqlDeployOnBuildVSCmd" AfterTargets="SqlPatchBuild" Condition="Exists('$(SolutionDir)\readyRollDeployTrigger.suo') and $(DBDeployOnBuild)!='True'">
+    <Message Importance="High" Text="Deploying database project..." />
+    <CallTarget Targets="Deploy" />
+  </Target>
+
+  <Target Name="SqlDeployOnBuildVS" AfterTargets="SqlPatchBuild" Condition="$(DBDeployOnBuild)!='True' and $(DBDeployOnBuildVS)=='True'">
+    <Message Importance="High" Text="Automatically deploying during build (as set by deployment mode)..." />
+    <CallTarget Targets="Deploy" />
+
+    <Message Importance="High" Text="Database migrations deployed successfully. Revising patch script file..." />
+    <CallTarget Targets="SqlPatchRebuild" />
+  </Target>
+
+  <Target Name="SqlDeployOnNewDatabaseBuild" AfterTargets="SqlPatchBuild" Condition="$(DBDeployOnBuild)!='True' and $(DBDeployOnNewDatabaseBuild)=='True' and $(DatabaseCreatePending)=='True'">
+    <Message Importance="High" Text="Automatically deploying during build because the target database does not exist (set by deployment mode)..." />
+    <CallTarget Targets="Deploy" />
+
+    <Message Importance="High" Text="Database created and migrations deployed successfully. Revising patch script file..." />
+    <CallTarget Targets="SqlPatchRebuild" />
+  </Target>
+
+  <Target Name="SqlPatchRebuild"
+          Inputs="@(SqlDeployInputItem);@(__buildInput)"
+          Outputs="@(SqlDeployOutputItem)"
+          DependsOnTargets="$(SqlBuildDependsOn);$(SqlDeployDependsOn)">
+
+    <DBPatchTask		DatabaseSchemaProviderName="$(DSP)"
+						ProjectFolder="$(MSBuildProjectDirectory)"
+						DatabaseName="$(FinalTargetDatabase)"
+						OutputDirectory="$(IntermediateOutputPath)"
+						ConnectionString="$(FinalTargetConnectionString)"
+						PropertiesFile="@(PropertiesFile->'%(FullPath)')"
+						PatchScriptName="$(DeployScriptFileName)"
+						Scripts="@(__buildInput->'%(FullPath)')"
+						SkipDriftAnalysis="True"
+						SkipDeployPreview="True"
+						DatabasePackageVersion="$(DatabasePackageVersion)"
+            SolutionDir="$(SolutionDir)"
+		/>
+  </Target>
+
+  <Target Name="_SetupSqlBuildInputs" Outputs="@(SqlBuildInputItem)">
+    <ItemGroup>
+      <__SqlBuildInputItem Include="@(MSBuildAllProjects)"/>
+      <__SqlBuildInputItem Include="@(Build)"/>
+      <__SqlBuildInputItem Include="@(MSBuildProjectFullPath)"/>
+      <__SqlBuildInputItem Include="@(SqlReferencePath)"/>
+      <__SqlBuildInputItem Include="@(SqlCmdVariables)"/>
+      <__SqlBuildInputItem Include="$(MSBuildProjectFullPath).user" Condition="Exists('$(MSBuildProjectFullPath).user')"/>
+      <__SqlBuildInputItem Include="$(IntermediateTargetFullFileName)" Condition="Exists('$(IntermediateTargetFullFileName)')"/>
+      <__SqlBuildInputItem Include="$(IntermediateSymbolsFullFileName)" Condition="Exists('$(IntermediateSymbolsFullFileName)')"/>
+    </ItemGroup>
+
+    <ItemGroup>
+      <SqlBuildInputItem Include="@(__SqlBuildInputItem->'%(FullPath)')"/>
+    </ItemGroup>
+  </Target>
+
+  <Target Name="SqlStaticCodeAnalysis" /><!-- Static code analysis is incompatible with ReadyRoll database projects. Also, this precludes the need for additional dependencies to be shipped with the ReadyRoll.MSBuild package. -->
+</Project>
