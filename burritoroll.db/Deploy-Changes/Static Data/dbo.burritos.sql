@@ -6,6 +6,8 @@ USING (
 	SELECT  'Hombre' AS NAME , 10 AS price
 	UNION ALL
 	SELECT  'Bebe' AS NAME , 6 AS price
+	UNION ALL
+	SELECT  'Tostada' AS NAME , 7 AS price
 --SELECT * FROM dbo.tacos
 ) AS Source
 ON (Target.name = Source.name AND Target.price = Source.price)
