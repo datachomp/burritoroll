@@ -88,12 +88,11 @@ StoredProcedure=[dbo].[yaytime];
     <Folder Include="Post-Deployment\" />
     <Folder Include="Deploy-Changes\" />
     <Folder Include="Deploy-Changes\Stored Procedures\" />
+    <Folder Include="Deploy-Changes\Static Data" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Pre-Deployment\01_Create_Database.sql" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Post-Deployment\01_Finalize_Deployment.sql" />
+    <None Include="Deploy-Changes\Static Data\dbo.tacos.sql" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Deploy-Once\0001_20121126-1121_rsullivan.sql" />
@@ -115,6 +114,9 @@ StoredProcedure=[dbo].[yaytime];
     <None Include="Deploy-Changes\Stored Procedures\dbo.gettacos.sql" />
     <None Include="Deploy-Changes\Stored Procedures\job.nightlyrollup.sql" />
     <None Include="Deploy-Changes\Stored Procedures\reporting.endofmonthreport.sql" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Deploy-Changes\Static Data\dbo.burritos.sql" />
   </ItemGroup>
   <Target Name="AfterDatabaseSync" Inputs="@(DBSyncFiles)" Outputs="OUTPUT_PLACEHOLDER">
     <PropertyGroup>
