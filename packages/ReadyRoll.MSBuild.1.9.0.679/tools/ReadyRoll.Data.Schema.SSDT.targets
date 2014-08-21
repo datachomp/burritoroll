@@ -123,7 +123,11 @@
     <DBDeployOnBuild Condition="'$(DBDeployOnBuild)' == ''">False</DBDeployOnBuild>
     <DBReSyncOnBuild Condition="'$(DBReSyncOnBuild)' == ''">False</DBReSyncOnBuild>
   </PropertyGroup>
-
+  
+  <Target Name="SqlProjectBuild64bit">
+	<Warning Text="64bit MSbuild is being used. Attempting to shell out to 32bit MSBuild..." />
+	<Exec Command="C:\Windows\Microsoft.NET\Framework\v4.0.30319\MSBuild.exe &quot;$(MSBuildProjectFullPath)&quot; /p:Configuration=$(Configuration) /p:VisualStudioVersion=$(VisualStudioVersion) " />
+  </Target>
   <Target Name="SqlProjectBuild"
           Inputs="@(__buildInput);$(MSBuildProjectFullPath);$(MSBuildAllProjects);@(ReferencePath)"
           Outputs="@(__buildInput->'$(ScriptTargetPath)')"
@@ -250,7 +254,7 @@
     <Message Text="Using SSDT toolpath: $(SSDTExtensionPath)Microsoft.Data.Tools.Schema.SqlTasks.targets" Importance="normal" />
     <Error Condition="!Exists('$(SSDTExtensionPath)Microsoft.Data.Tools.Schema.SqlTasks.targets')" Text="Cannot find SQL Server Data Tools (SSDT). Please install this Visual Studio 2012 component or download SSDT for Visual Studio 2010 from http://msdn.microsoft.com/en-us/jj650014" />
     <Error Condition="@(IllegalBuildTypeAssets) != ''" Text="This project asset has an invalid Build attribute set. Please set its Build attribute to None." File="%(IllegalBuildTypeAssets.FullPath)" />
-    <Error Condition="$(__is64bitMSBuildRunner) == 'True'" Text="The x64 version of MSBuild has been used to initiate this build, however this is currently not supported by ReadyRoll. Please use the x86 version of MSBuild for this project/solution. If using TFS Build, set this by opening your build process template, clicking Process... Advanced... and selecting x86 in the MSBuild Platform drop-down. If using TeamCity, change your build configuration's build runner &quot;Run platform&quot; setting to x86. If building from the commandline, ensure that the following MSBuild executable path is used: C:\Windows\Microsoft.NET\Framework\v4.0.30319\MSBuild.exe" File="%(IllegalBuildTypeAssets.FullPath)" />
+    <!-- <Error Condition="$(__is64bitMSBuildRunner) == 'True'" Text="The x64 version of MSBuild has been used to initiate this build, however this is currently not supported by ReadyRoll. Please use the x86 version of MSBuild for this project/solution. If using TFS Build, set this by opening your build process template, clicking Process... Advanced... and selecting x86 in the MSBuild Platform drop-down. If using TeamCity, change your build configuration's build runner &quot;Run platform&quot; setting to x86. If building from the commandline, ensure that the following MSBuild executable path is used: C:\Windows\Microsoft.NET\Framework\v4.0.30319\MSBuild.exe" File="%(IllegalBuildTypeAssets.FullPath)" /> -->
     <Error Condition="$(GenerateOctopusNuPkg) == 'True' and !Exists('$(OctopusNuSpecFileName)')" Text="An Octopus NuSpec file could not be found matching the name &quot;$(OctopusNuSpecFileName)&quot;. To resolve this, open Project Settings and click &quot;Add/Edit NuSpec file&quot;." File="$(MSBuildProjectDirectory)\$(OctopusNuSpecFileName)" />
 
     <!-- Needed to ensure that the file is cleaned up to trigger a full project build when the target connection isn't supplied -->
@@ -267,7 +271,8 @@
       <Output TaskParameter="CopiedFiles" ItemName="FileWrites" />
     </Copy>
 
-    <CallTarget Targets="SqlProjectBuild" Condition="'$(SkipProjectVerification)' != 'True'"/>
+    <CallTarget Targets="SqlProjectBuild" Condition="'$(SkipProjectVerification)' != 'True' and $(__is64bitMSBuildRunner) != 'True'" />
+    <CallTarget Targets="SqlProjectBuild64bit" Condition="'$(SkipProjectVerification)' != 'True' and $(__is64bitMSBuildRunner) == 'True'" />
 
     <!-- Needed to ensure that the Incremental Deployment script (sql) and accompanying Deployment Preview report (html) is cleaned up prior to Octopus package creation -->
     <Delete Condition="Exists('$(TargetDir)$(DeployScriptFileName)')" Files="$(TargetDir)$(DeployScriptFileName)" />
