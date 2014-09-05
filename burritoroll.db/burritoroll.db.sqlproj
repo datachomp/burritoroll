@@ -77,10 +77,10 @@ StoredProcedure=[dbo].[yaytime];
     <AppDataPath>$(APPDATA)</AppDataPath>
   </PropertyGroup>
   <PropertyGroup>
-    <ReadyRollTargetsPath>..\packages\ReadyRoll.MsBuild.1.9.0.679\tools\ReadyRoll.Data.Schema.SSDT.targets</ReadyRollTargetsPath>
+    <ReadyRollTargetsPath>$(MSBuildExtensionsPath)\ReadyRoll\ReadyRoll.Data.Schema.SSDT.targets</ReadyRollTargetsPath>
   </PropertyGroup>
   <Import Condition="Exists('$(ReadyRollTargetsPath)')" Project="$(ReadyRollTargetsPath)" />
-  <Import Condition="!Exists('$(ReadyRollTargetsPath)')" Project="$(MSBuildExtensionsPath)\ReadyRoll\ReadyRoll.Data.Schema.SSDT.targets" />
+  <Import Condition="!Exists('$(ReadyRollTargetsPath)')" Project="..\packages\ReadyRoll.MsBuild.1.9.0.679\tools\ReadyRoll.Data.Schema.SSDT.targets" />
   <ItemGroup>
     <Folder Include="Properties\" />
     <Folder Include="Pre-Deployment\" />

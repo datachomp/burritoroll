@@ -126,7 +126,7 @@
   
   <Target Name="SqlProjectBuild64bit">
 	<Warning Text="64bit MSbuild is being used. Attempting to shell out to 32bit MSBuild..." />
-	<Exec Command="C:\Windows\Microsoft.NET\Framework\v4.0.30319\MSBuild.exe &quot;$(MSBuildProjectFullPath)&quot; /p:Configuration=$(Configuration) /p:VisualStudioVersion=$(VisualStudioVersion) " />
+	<Exec Command="C:\Windows\Microsoft.NET\Framework\v4.0.30319\MSBuild.exe &quot;$(MSBuildProjectFullPath)&quot; /p:Configuration=$(Configuration) /p:Platform=$(Platform) /p:VisualStudioVersion=$(VisualStudioVersion) " />
   </Target>
   <Target Name="SqlProjectBuild"
           Inputs="@(__buildInput);$(MSBuildProjectFullPath);$(MSBuildAllProjects);@(ReferencePath)"
